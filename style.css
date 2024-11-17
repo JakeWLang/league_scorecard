@@ -10,7 +10,8 @@ body {
     justify-content: center;
     width: 100%;
     background-color: bisque;
-    position: sticky;;
+    position: sticky;
+    z-index: 9;
     top: 0;
     padding: 1%;
     box-shadow: 0px 3px 4px #fbeae0;
@@ -31,18 +32,118 @@ body {
     padding-top: 5%
 }
 
-#chartDiv {
-    /* display: flex; */
-    /* flex-direction: column; */
-    /* justify-content: center; */
-    /* min-width: 0; */
+.chart-note {
+    font-family: 'Titillium Web';
+    font-style: italic;
+    font-size: 100%;
+    text-align: center;
 }
 
+.chart-note-bg {
+    padding: 1%;
+    background: #fff3ed;
+    border-bottom: 3px solid #796b64;
+    /* border-top: 1px solid #796b64 */
+}
+
+
+#challenges-header {
+    padding: 5% 0% 1% 0%
+}
+
+#challenges-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 80%;
+    padding: 2.5% 0% 5% 0%
+}
+
+.challenge {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    width: 20%;
+    padding: 0% 0.5% 0% 0.5%;
+    font-family: "Roboto"
+}
+
+.star-div {
+    width: 35%;
+    padding: 3% 0% 3% 0%
+}
+
+.star-div svg {
+    fill: none;
+    stroke: black;
+    stroke-width: 2px;
+}
+
+svg:hover {
+    fill: #f9d419;
+    cursor:pointer
+}
+
+#star-modal {
+    display: none;
+    background: #fbf6dc;
+    border: 1px solid #b0afaa;
+    width:100%;
+    padding: 7.5% 0% 7.5% 0%;
+    position: sticky;
+    bottom: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#star-modal span {
+    width: 80%;
+    font-family: 'Titillium Web';
+    font-size: 85%;
+    text-align: center;
+}
+
+
+.tabulator {
+    font-family: 'Roboto';
+}
 
 
 @media only screen and (max-width: 550px) {
     #page-header {
         padding: 5%
     }
+    .chart-note-bg {
+        font-size: 90%
+    }
+    #challenges-div {
+        flex-direction: column;
+    }
+    .challenge {
+        padding: 4% 0.5% 4% 0.5%;
+    }
+    .star-div {
+        width: 80%
+    }
+    #star-modal span {
+        width: 95%;
+    }
+
 }
 
+@media only screen and (min-width: 551px) {
+    #star-modal {
+        padding: 2.5% 0% 2.5% 0%
+    }
+    #star-modal span {
+        font-size: 95%;
+    }
+    .chart-note-bg {
+        font-size: 100%
+    }
+
+}

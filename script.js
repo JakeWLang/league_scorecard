@@ -1,3 +1,12 @@
+/*
+    TODO:
+        * Provide a link to the form at the top to submit
+        * Add the image gallery
+        * Consider adding a full table to display points by category in the page's challenge description modal
+            - Do this by adapting userCatPoints to filter to just that category and sort by submissions
+
+
+*/
 const sheetId = '1Sk1PrhvWS9oj2FSHgQnlfu-zd74C_EknYfA2cIo9ANU'
 const sheetName = encodeURIComponent('Form Responses 1')
 const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`
@@ -10,6 +19,45 @@ const colNameMap = {
     'What is your username as it appears in the discord?': 'username',
     'What unit(s) have you completed?': 'units_completed'
 }
+const catMap = {
+    "Purchased a new set for your army: 1 pt (for each set including box sets with multiple units in them purchased)": "Buyer",
+    "Purchased a new set at the Dice Dojo: additional 1pt (if purchased with proof of purchase at Dice Dojo)": "Dojo Supporter",
+    "Started assembling a set for your army: 1 pt (for each unit you started assembling)": "Beginning Assembler",
+    "Finished assembling a set for your army: 2 pts (for each unit you finished assembling)": "Accomplished Assembler",
+    "Major conversions (Optional): 2 pt (if there are significant conversions to your units or you are doing a complicated conversion – this does not include simple head or weapon swaps, but does include things such as very involved greenstuffing or kitbashing).": "Kitbasher",
+    "Primed a unit: 2 pts (for each unit primed)": "Primer",
+    "Started Painting a unit: 2 pt (for each unit you started painting)": "Beginning Painter",
+    "Finished Painting a unit (basic): 2 pt (for each unit you finishing painting in a basic manner, such as Slap-chop, single basecoat/wash, or otherwise very basic battle-ready scheme.)": "Accomplished Painter",
+    "Finishing Painting a unit (advanced) (Optional): additional 2 pt from the above (for each unit you finished painting in an advanced manner, including multiple steps of layering and shading, picking out advanced details, and incorporating unique and non-standard effects.)": "Advanced Accomplished Painter",
+    "Special Effects (Optional): 2 pt (for each unit that includes a special effect such as blood splatters, weathering, pigment powders, OSL, etc.)": "SFX Artist",
+    "Advanced Techniques (Optional): 2pt (for each unit that includes advanced techniques such as NMM, highly detailed shading and highlighting, texture work, or other unique high-effort techniques.)": "Technically Advanced",
+    "Basic Basing: 2 pt (for each unit that’s fully painted and then based in a simple manner, such as a single layer of texture paste. Must include a painted base rim [of any color.])": "Basic Baser",
+    "Advanced Basing (Optional): additional 2pt from Basic Basing (for each unit that is based in an advanced manner, including tufting, utilizing cork or similar materials for varied height, special basing effects like water or lava, and otherwise more involved basing effort.)": "Advanced Baser",
+    "Finished Unit: 5 pts (To get these points you must have completed all of the required steps in the painting category during the course of the hobby league. NOTE: varnishing is not required, but I do recommend it.)": "Unit Finisher",
+}
+const catDescMap = {
+    "Buyer": "Purchased a new set for your army.",
+    "Dojo Supporter": "Purchased a new set at the Dice Dojo.",
+    "Beginning Assembler": "Started assembling a set for your army.",
+    "Accomplished Assembler": "Finished assembling a set for your army.",
+    "Kitbasher": "Major conversions - if there are significant conversions to your units or you are doing a complicated conversion – this does not include simple head or weapon swaps, but does include things such as very involved greenstuffing or kitbashing.",
+    "Primer": "Primed a unit.",
+    "Beginning Painter": "Started Painting a unit.",
+    "Accomplished Painter": "Finished Painting a unit.",
+    "Advanced Accomplished Painter": "For units you finished painting in an advanced manner, including multiple steps of layering and shading, picking out advanced details, and incorporating unique and non-standard effects.",
+    "SFX Artist": "For units that include a special effect such as blood splatters, weathering, pigment powders, OSL, etc.",
+    "Technically Advanced": "For units that include advanced techniques such as NMM, highly detailed shading and highlighting, texture work, or other unique high-effort techniques.",
+    "Basic Baser": "For units that are fully painted and then based in a simple manner, such as a single layer of texture paste. Must include a painted base rim [of any color.]",
+    "Advanced Baser": "For units that are based in an advanced manner, including tufting, utilizing cork or similar materials for varied height, special basing effects like water or lava, and otherwise more involved basing effort.",
+    "Unit Finisher": "Completed all required steps of a unit."
+}
+// Replaced names may include: mis-entered names and extraneous parts of names (e.g. pronouns)
+const namesToRepl = {
+    'jake_got_cake': 'Jake L',
+    '(they/them)': ''
+}
+const genNums = []
+
 
 
 fetch(sheetURL)
@@ -40,11 +88,52 @@ function parseCSV(csv) {
             if (fmtColName !== "undefined") {
                 colName = fmtColName
             }
+            if (fmtColName === 'username') {
+                val = cleanUserName(val)
+            }
+            if (fmtColName === "point_cats") {
+                let catMapKeys = Object.keys(catMap)
+                for (k = 0; k < catMapKeys.length; k++) {
+                    let activeKey = catMapKeys[k], activeVal = catMap[catMapKeys[k]]
+                    val = val.replace(activeKey, activeVal)
+                }
+            }
             thisObject[colName] = val
         }
         objects.push(thisObject);
     }
     return objects;
+}
+
+
+function toTitleCase(str) {
+    return str.replace(
+      /\w\S*/g,
+      text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
+    );
+  }
+
+
+function replNames(curUser) {
+    checks = Object.keys(namesToRepl)
+    for (let i = 0; i < checks.length; i++) {
+        let curCheck = checks[i], curRepl = namesToRepl[checks[i]]
+        curUser = curUser.replace(curCheck, curRepl)
+    }
+    return curUser
+}
+
+
+function cleanUserName(baseName) {
+    // Unify names; remove any @s and periods
+    let cleanerName = baseName.replace('.', '').trim().toLowerCase()
+    let atIndex = cleanerName.indexOf('@')
+    if (atIndex != -1) {
+        cleanerName = cleanerName.slice(0, atIndex).trim()
+    }
+    let closerCleaner = replNames(cleanerName)
+    let cleanestName = toTitleCase(closerCleaner)
+    return cleanestName
 }
 
 
@@ -56,7 +145,13 @@ function handleResponse(fileText) {
     let top3 = gatherTopN(totalPoints, 3)
     let podiumSorted = podiumSort(top3)
     makePodium(podiumSorted[0], podiumSorted[1], podiumSorted[2])
-
+    console.log(sheetObjects)
+    let totalData = genTotalData(totalPoints, sheetObjects)
+    console.log(totalData)
+    genTable(totalData)
+    let userPointsByCat = gatherUserPointsByCat(sheetObjects)
+    let catPoints = gatherCatPoints(userPointsByCat, 3)
+    insertCatPoints(catPoints)
 }
 
 function gatherTotalPoints(csv) {
@@ -79,6 +174,186 @@ function gatherTotalPoints(csv) {
     }
     return totalPoints
 }
+
+
+function gatherUserPointsByCat(data) {
+    // for each row, create an entry in users if not users[entry]
+    // then, within that row, create a count for each category for that user {'user': {'cat1': count1}}
+    let users = {}
+    for (let i = 0; i < data.length; i++) {
+        let activeRow = data[i]
+        let activeUser = activeRow['username']
+        if (users[activeUser] == undefined) {
+            users[activeUser] = {}
+        }
+        let userCategories = activeRow['point_cats'].split(', ')
+        for (let j = 0; j < userCategories.length; j++) {
+            let activeCat = userCategories[j]
+            let isRealCat = Object.values(catMap).includes(activeCat)
+            if (isRealCat) {
+                if (users[activeUser][activeCat] == undefined) {
+                    users[activeUser][activeCat] = 0
+                }
+                users[activeUser][activeCat] += 1
+            }
+        }
+    }
+    return users
+}
+
+
+function inArray(array, el) {
+    for(var i = 0 ; i < array.length; i++) 
+        if(array[i] == el) return true;
+    return false;
+ }
+ 
+
+ function getRand(array) {
+     var rand = array[Math.floor(Math.random()*array.length)];
+     if(!inArray(genNums, rand)) {
+        genNums.push(rand); 
+        return rand;
+     }
+     return getRand(array);
+ }
+
+
+ function selectCats(nCats) {
+    let cats = Object.values(catMap)
+    let catsInMap = cats.length
+    let catIdx = []
+    for (let i = 0; i < catsInMap; i++) {
+        catIdx.push(i)
+    }
+    let selCats = []
+    for (let i = 0; i < nCats; i++) {
+        let randSel = getRand(catIdx)
+        selCats.push(cats[randSel])
+    }
+    return selCats
+ }
+
+
+function gatherCatPoints(userCatPoints, nCats=3) {
+    console.log('this is userCatPoints:', userCatPoints)
+    let selCats = selectCats(nCats)
+    let catPoints = {}
+    let users = Object.keys(userCatPoints)
+
+    for (let i = 0; i < users.length; i++) {
+        let activeUser = users[i]
+        let activeUserCatPoints = userCatPoints[activeUser]
+        let catsInUserCatPoints = Object.keys(activeUserCatPoints)
+        for (let j = 0; j < catsInUserCatPoints.length; j++) {
+            let activeCat = catsInUserCatPoints[j]
+            if (selCats.includes(activeCat)) {
+                if (catPoints[activeCat] == undefined) {
+                    catPoints[activeCat] = {}
+                }
+                catPoints[activeCat][activeUser] = activeUserCatPoints[activeCat]
+            }
+        }
+    }
+    
+    let topByCat = {}
+    // Push each individual object within a cat into an array of objects to be sorted
+    for (let x = 0; x < selCats.length; x ++) {
+        let pointArr = []
+        let activeCat = selCats[x]
+        let catUsers = Object.keys(catPoints[activeCat]), catVals = Object.values(catPoints[activeCat])
+        for (let y = 0; y < catUsers.length; y++) {
+            let activeUser = catUsers[y], activePoints = catVals[y]
+            let userObj = {'user': activeUser, 'points': activePoints}
+            pointArr.push(userObj)
+        }
+        pointArr.sort((a, b) => (
+            a.points < b.points ? 1 : b.points < a.points ? -1: 0
+        ))
+        let topUser = pointArr[0]
+        topByCat[activeCat] = topUser
+    }
+    return topByCat
+}
+
+
+function insertCatPoints(topCatPoints) {
+    console.log('this is topCatPoints:', topCatPoints)
+    // take the topCatPoints and insert separate divs into challenges-div
+    // for each cat
+    let cats = Object.keys(topCatPoints), vals = Object.values(topCatPoints)
+    let challengeDiv = document.getElementById('challenges-div')
+    for (let i = 0; i < cats.length; i++) {
+        let activeCat = cats[i], activeUser = vals[i]['user'], activePoints = vals[i]['points']
+        let tempCatDiv = document.createElement('div')
+        tempCatDiv.id = 'challenge-' + activeCat
+        tempCatDiv.textContent = activeCat
+        tempCatDiv.className = "challenge"
+        challengeDiv.appendChild(tempCatDiv)
+
+        let starDiv = document.createElement('div')
+        starDiv.className = 'star-div'
+        starDiv.innerHTML += '<svg version="1.1" ' + 'id="' + 'star-' + activeCat +'" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 86.7 82.8" style="enable-background:new 0 0 86.7 82.8;" xml:space="preserve" onclick="makeModal(this)"> <path class="star-svg" d="M41.1,3.8c1.2-2.5,3.2-2.5,4.4,0l9.1,18.4c1.2,2.5,4.4,4.8,7.2,5.2l20.3,3c2.7,0.4,3.3,2.3,1.4,4.2L68.8,49 c-2,1.9-3.2,5.7-2.7,8.4l3.5,20.3c0.5,2.7-1.2,3.9-3.6,2.6l-18.2-9.6c-2.4-1.3-6.4-1.3-8.8,0l-18.2,9.6c-2.4,1.3-4.1,0.1-3.6-2.6 l3.5-20.3c0.5-2.7-0.8-6.5-2.7-8.4L3.2,34.7c-2-1.9-1.4-3.8,1.4-4.2l20.3-3c2.7-0.4,5.9-2.7,7.2-5.2L41.1,3.8z"/> </svg>'
+        // star.src = 'images/star.svg'
+        // star.className = 'challenge-star'
+        tempCatDiv.appendChild(starDiv)
+
+        let tempUserDiv = document.createElement('div')
+        let submissions = ""//" " + (activePoints > 1 ? "submissions" : "submission")
+        tempUserDiv.textContent = activeUser + ' - ' + activePoints + submissions
+        tempCatDiv.appendChild(tempUserDiv)
+    }
+}
+
+
+function unlightStars(this_id) {
+    let starSvgs = document.getElementsByClassName('star-svg')
+    for (let i = 0; i < starSvgs.length; i++) {
+        let curStar = starSvgs[i]
+        let curParent = curStar.parentNode
+        if (curParent.id != this_id) {
+            curParent.style.fill = ''
+        }
+    }
+
+}
+
+
+function lightStar(target) {
+    let starget = document.getElementById(target.id)
+    unlightStars(starget.id)
+
+    starget.style.fill = "#f9d419"
+}
+
+
+function makeModal(target) {
+    // make the star modal appear
+    let starType = target.id.split('-')[1]
+    let starText = catDescMap[starType]
+    let modal = document.getElementById('star-modal')
+    modal.style.display = 'flex'
+    modal.innerHTML = '<span><b>' + starType + ':</b> <br>' + starText + '</span>'
+    lightStar(target)
+
+}
+
+function onClickOutsideStarModal() {
+    let starModal = document.getElementById('star-modal')
+    acceptableTargets = 
+        document.addEventListener('click', e => {
+            let isntStarModal = e.target.id != 'star-modal'
+            let isntStarSvg = e.target.className['baseVal'] != 'star-svg'
+        if (isntStarModal & isntStarSvg) {
+            starModal.style.display = 'none'
+            unlightStars('none')
+        };
+        });
+  };
+  
+  onClickOutsideStarModal('#star-modal')
+  
+
 
 function gatherTopN(data, n) {
     users = Object.keys(data), vals = Object.values(data)
@@ -141,11 +416,16 @@ function makePodium(xVal, yVal, names) {
         2: '🥈',
         3: '🥉'
     }
+
     var trace1 = {
         x: names,
         y: yVal,
         type: 'bar',
         text: yVal.map(String),
+        textfont: {
+            family: 'Titillium Web',
+            size: 20
+        },
         marker: {
             color: [
                 'rgb(114, 153, 179)',
@@ -162,7 +442,7 @@ function makePodium(xVal, yVal, names) {
         type: 'scatter',
         text: xVal.map(function(val){return positionMap[val]}),
         textfont : {
-            family:'Times New Roman',
+            family:'Titillium Web',
             size: 30
           },
         textposition: 'above',
@@ -179,14 +459,110 @@ function makePodium(xVal, yVal, names) {
         yaxis: {
             visible: false
         },
-        xaxis: {type: 'category'},
-        showlegend: false
+        xaxis: {
+            type: 'category',
+            tickfont: {
+                family: 'Roboto',
+                size: 13,
+                color: "#535351",
+                weight: 1000
+            }
+        },
+        showlegend: false,
+        hovermode: false,
     }
     var config = {
         'displayModeBar': false
     }
 
-    Plotly.newPlot('chartDiv', data, layout, config);
+    const animationConfig = {
+        transition: {
+          duration: 500,
+          easing: "cubic-in-out"
+        },
+        frame: {
+          duration: 500
+        }
+      };
+
+    // Plotly.newPlot('chart-div', data, layout, config);
+    Plotly.newPlot('chart-div', data, layout, config);    
+
 }
-  
-  
+
+function findTopBottomSubmission(user, baseData) {
+    // Filter base data for user, sort base data by datetime submission; find nth (1st or last) submission
+    let userRows = []
+    for (let i = 0; i < baseData.length; i++) {
+        let curRow = baseData[i]
+        if (curRow['username'] === user) {
+            userRows.push(curRow)
+        }
+    }
+
+    userRows.sort((a, b) => (
+        a.time > b.time ? 1 : b.time > a.time ? -1: 0))
+
+    return [userRows[0], userRows[userRows.length-1]]
+}
+
+
+function okDate(dateObj) {
+    let day = dateObj.getDay(), month = dateObj.getMonth(), year = dateObj.getFullYear()
+    return month +'/' + (day + 1) + '/' + String(year).slice(2, 4)
+}
+
+
+function makePrettyUnitSubmission(row) {
+    // For a row submitted, join time and unit
+    return okDate(row['time']) + ': ' + row['units_completed']
+}
+
+function genTotalData(totalPoints, baseData) {
+    // Takes in the total points and then creates a dataframe based on that object
+    let users = Object.keys(totalPoints), points = Object.values(totalPoints);
+    let newDF = []
+    for (let i = 0; i < users.length; i++) {
+        userDF = {}
+        userDF['username'] = users[i]
+        userDF['total_points'] = points[i]
+        newDF.push(userDF)
+
+        let topBottom = findTopBottomSubmission(users[i], baseData)
+        let bottom = topBottom[0], top = topBottom[1]
+        let firstSub = makePrettyUnitSubmission(bottom), lastSub = makePrettyUnitSubmission(top)
+        userDF['first_submission'] = firstSub
+        userDF['last_submission'] = ''
+        if (firstSub != lastSub) {
+            userDF['last_submission'] = lastSub
+        }
+    }
+    return newDF
+}
+
+function genTable(data) {
+    let table = new Tabulator('#table-div', {
+    //   selectable: 1,
+      responsiveLayout: "hide",
+        // layout: "fitDataFill",
+      data:data,
+    //   renderHorizontal:'virtual',
+      // maxHeight: '100%',
+    //   responsiveLayout:'collapse',
+      // pagination:pagination,
+      // paginationSize:10,
+      columns:[
+        {title:'Name', field:'username', maxWidth: 120
+        // cellClick: function(e, cell){
+        //   genChart(e, cell, d)}
+        },
+        {title:'Total Points', field:'total_points', sorter:'number', maxWidth:180},
+        {title:'First Model', field:'first_submission', maxWidth:200},
+        {title:'Last Model', field:'last_submission', maxWidth: 200},
+        ],
+        sorter:'number',
+        initialSort:[
+            {column:"total_points", dir:"desc", sorter:"number"}, //sort by this first
+        ],
+    })
+  };
