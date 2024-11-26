@@ -4,6 +4,7 @@
         * Add the image gallery
         * Consider adding a full table to display points by category in the page's challenge description modal
             - Do this by adapting userCatPoints to filter to just that category and sort by submissions
+        * adapt sheetId, sheetName and colNameMap, catMap, catDescMap, namesToRepl to constants.json
 
 
 */
@@ -472,7 +473,8 @@ function makePodium(xVal, yVal, names) {
         hovermode: false,
     }
     var config = {
-        'displayModeBar': false
+        displayModeBar: false,
+        responsive: true
     }
 
     const animationConfig = {
@@ -489,6 +491,7 @@ function makePodium(xVal, yVal, names) {
     Plotly.newPlot('chart-div', data, layout, config);    
 
 }
+
 
 function findTopBottomSubmission(user, baseData) {
     // Filter base data for user, sort base data by datetime submission; find nth (1st or last) submission
@@ -552,11 +555,11 @@ function genTable(data) {
       // pagination:pagination,
       // paginationSize:10,
       columns:[
-        {title:'Name', field:'username', maxWidth: 120
+        {title:'Name', field:'username', minWidth: 80
         // cellClick: function(e, cell){
         //   genChart(e, cell, d)}
         },
-        {title:'Total Points', field:'total_points', sorter:'number', maxWidth:180},
+        {title:'Total Points', field:'total_points', sorter:'number', minWidth: 120},
         {title:'First Model', field:'first_submission', maxWidth:200},
         {title:'Last Model', field:'last_submission', maxWidth: 200},
         ],

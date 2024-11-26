@@ -1,0 +1,13 @@
+{
+    "colnames": {
+        "Link to discord message that includes picture": "form_link",
+        "Please mark every point you scored.": "point_cats",
+        "Timestamp": "time",
+        "Total point worth": "total_points",
+        "What is your username as it appears in the discord?": "username",
+        "What unit(s) have you completed?": "units_completed"
+    },
+    "sheet_id": "1Sk1PrhvWS9oj2FSHgQnlfu-zd74C_EknYfA2cIo9ANU",
+    "sheet_name": "Form Responses 1",
+    "parsed_links": "parsed_links.csv"
+}
