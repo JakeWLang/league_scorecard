@@ -19,7 +19,15 @@
 
 
     <body>
-        <div id="page-header">Dice Dojo AoS Hobby League Scoreboard</div>
+        <div id="page-header">
+            <span>Dice Dojo AoS Hobby League - {SEASON NAME}</span>
+        </div>
+        <div id="button-buddy">
+            <a class="form-button" href="https://forms.gle/TTmeYvXNkqviWZQx8" target="_blank">
+                Submit a Unit
+            </a>
+        </div>
+        </div>
         <div class="chart-header top-buffer">Current League Standings</div>
         <div id='chart-div'><!-- Plotly chart will be drawn inside this DIV --></div>
         <div id="table-div"></div>
@@ -31,7 +39,16 @@
             Challenge progress is determined by the count of submissions that marked a specific point category.<br>
             Click a star to define the point category. Click anywhere else on the page to dismiss the description.
         </div>
-        <div class="content"></div>
+        <div id="gallery-div" class="chart-header top-buffer">
+            Seasonal Gallery
+            <div id="gallery-container">
+                <span id="img-back"><</span>
+                <img id="gallery-img">
+                <span id="img-fwd">></span>
+            </div>
+            <div id="gallery-img-desc"></div>
+        </div>
+        <div id="contact-info">Issues with the site? Contact Jake on Discord (jake_got_cake)</div>
         <div id="star-modal"></div>
     </body>
     <script src='script.js'></script>

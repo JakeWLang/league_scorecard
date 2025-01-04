@@ -4,13 +4,14 @@
         * Add the image gallery
         * Consider adding a full table to display points by category in the page's challenge description modal
             - Do this by adapting userCatPoints to filter to just that category and sort by submissions
-        * adapt sheetId, sheetName and colNameMap, catMap, catDescMap, namesToRepl to constants.json
-
-
+        * adapt sheetId, sheetName and colNameMap, catMap, catDescMap, namesToRepl, CDN from constants.json
+        * Write a func that pulls all the values of a dataframe column into an array
 */
 const sheetId = '1Sk1PrhvWS9oj2FSHgQnlfu-zd74C_EknYfA2cIo9ANU'
 const sheetName = encodeURIComponent('Form Responses 1')
 const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`
+const CDN = 'https://assets.jakewlang.com'
+const imgDiv = 'gallery-img'
 const dateColName = 'Timestamp'
 const colNameMap = {
     'Link to discord message that includes picture': 'img_link',
@@ -58,26 +59,26 @@ const namesToRepl = {
     '(they/them)': ''
 }
 const genNums = []
-
-
+const genImgs = []
+var imgI = 0
 
 fetch(sheetURL)
     .then((response) => response.text())
     .then((fileText) => handleResponse(fileText));
 
 
-function csvSplit(row) {
-    return row.split(';') //.map((val) => val.substring(1, val.length - 1));
+function csvSplit(row, splitter) {
+    return row.split(splitter)
 }
 
 
-function parseCSV(csv) {
+function parseCSV(csv, splitter) {
     const csvRows = csv.split('\n');
-    const colNames = csvSplit(csvRows[0]);
+    const colNames = csvSplit(csvRows[0], splitter);
     let objects = [];
     for (let i = 1; i < csvRows.length; i++) {
         let thisObject = {};
-        let row = csvRows[i].split(';');
+        let row = csvRows[i].split(splitter);
 
         for (let j = 0; j < row.length; j++) {
             var val = row[j]
@@ -86,10 +87,10 @@ function parseCSV(csv) {
             if (colName === dateColName) {
                 val = new Date(val)
             }
-            if (fmtColName !== "undefined") {
+            if (fmtColName !== undefined) {
                 colName = fmtColName
             }
-            if (fmtColName === 'username') {
+            if (fmtColName === 'username' | colName === 'username') {
                 val = cleanUserName(val)
             }
             if (fmtColName === "point_cats") {
@@ -140,19 +141,39 @@ function cleanUserName(baseName) {
 
 function handleResponse(fileText) {
     fileText = fileText.replaceAll('","', ';').replaceAll('"', '')
-    let sheetObjects = parseCSV(fileText);
-
+    let sheetObjects = parseCSV(fileText, ';');
     let totalPoints = gatherTotalPoints(sheetObjects)
     let top3 = gatherTopN(totalPoints, 3)
     let podiumSorted = podiumSort(top3)
     makePodium(podiumSorted[0], podiumSorted[1], podiumSorted[2])
-    console.log(sheetObjects)
     let totalData = genTotalData(totalPoints, sheetObjects)
-    console.log(totalData)
     genTable(totalData)
     let userPointsByCat = gatherUserPointsByCat(sheetObjects)
     let catPoints = gatherCatPoints(userPointsByCat, 3)
     insertCatPoints(catPoints)
+
+    fetch('https://assets.jakewlang.com/parsed_links.csv',
+        {
+        method: 'get',
+        headers: {
+            'content-type': 'text/csv;charset=UTF-8'
+        }})
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.text();
+      })
+      .then(data => {
+        let parsedImgs = parseCSV(data, ',')
+        let randPicks = getRandFromCol(parsedImgs, 'img_filename', 5)
+        console.log(randPicks)
+        setGalleryImg(randPicks, parsedImgs, sheetObjects)
+      })
+      .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+      });
+    
 }
 
 function gatherTotalPoints(csv) {
@@ -210,14 +231,101 @@ function inArray(array, el) {
  }
  
 
- function getRand(array) {
-     var rand = array[Math.floor(Math.random()*array.length)];
-     if(!inArray(genNums, rand)) {
-        genNums.push(rand); 
+ function getRand(picker, choiceArray, returnInd=false, ignoreNull=true) {
+    var selInd = Math.floor(Math.random()*picker.length)
+    var rand = picker[selInd];
+    if(!inArray(choiceArray, rand) & !(ignoreNull & rand === undefined)) {
+        choiceArray.push(rand);
+        if (returnInd === true) {
+            rand = [rand, selInd]
+        }
         return rand;
-     }
-     return getRand(array);
+    }
+    return getRand(picker, choiceArray, returnInd);
  }
+
+
+ function gatherColVals(df, col) {
+    nRows = df.length
+    colVals = []
+    for (let i = 0; i < nRows; i++) {
+        colVals.push(df[i][col])
+    }
+    return colVals
+ }
+
+
+ function getRandFromCol(df, col, n) {
+    // get all the values of a column from a dataframe and make random choices of them
+    colVals = gatherColVals(df, col)
+    selVals = []
+    for (let i = 0; i < n; i++) {
+        selVals.push(getRand(colVals, genImgs, true))
+    }
+    return selVals
+ }
+
+
+ function setGalleryImg(selImgs, imgData, allData) {
+    let firstImg = selImgs[0][0]
+    let imgElem = document.getElementById(imgDiv)
+    let firstImgLink = CDN + '/' + firstImg
+    imgElem.src = firstImgLink
+
+
+    makeImgDesc(imgData, selImgs[0][1], allData)
+
+    let backButton = document.getElementById('img-back')
+    let fwdButton = document.getElementById('img-fwd')
+
+    backButton.addEventListener('click', function() {chgImg(selImgs, false, imgData, allData)})
+    fwdButton.addEventListener('click', function() {chgImg(selImgs, true, imgData, allData)})
+ }
+
+
+ function makeImgDesc(data, rowIndex, allData) {
+    let parentRow = getParentRowFromFormLink(data[rowIndex]['form_link'], allData)
+
+    let imgDesc = document.getElementById('gallery-img-desc')
+    let user = parentRow['username']
+    let unit = parentRow['units_completed']
+    let compDate = okDate(parentRow['time'])
+
+    imgDesc.innerHTML = `${user}: ${unit} completed on ${compDate}`
+ }
+
+ function chgImg(imgs, fwd, data, parentData) {
+    let nImgs = imgs.length
+    if (fwd) {
+        imgI = imgI + 1
+        if (imgI === nImgs) {
+            imgI = 0
+        }
+    } else {
+        imgI = imgI - 1
+        if (imgI < 0) {
+            imgI = nImgs - 1
+        }
+    }
+
+    let selImgName = imgs[imgI][0]
+    let selImgIndex = imgs[imgI][1]
+    let imgElem = document.getElementById(imgDiv)
+    let selImgLink = `${CDN}/${selImgName}`
+    imgElem.src = selImgLink
+    makeImgDesc(data, selImgIndex, parentData)
+}
+
+function getParentRowFromFormLink(formLink, parentData) {
+    // Find the row where formLink from imgData == parentData['form_link']
+    for (let i = 0; i < parentData.length; i++) {
+        selRow = parentData[i]
+        if (selRow['img_link'] == formLink) {
+            break
+        }
+    }
+    return selRow
+}
 
 
  function selectCats(nCats) {
@@ -229,7 +337,7 @@ function inArray(array, el) {
     }
     let selCats = []
     for (let i = 0; i < nCats; i++) {
-        let randSel = getRand(catIdx)
+        let randSel = getRand(catIdx, genNums)
         selCats.push(cats[randSel])
     }
     return selCats
@@ -237,7 +345,6 @@ function inArray(array, el) {
 
 
 function gatherCatPoints(userCatPoints, nCats=3) {
-    console.log('this is userCatPoints:', userCatPoints)
     let selCats = selectCats(nCats)
     let catPoints = {}
     let users = Object.keys(userCatPoints)
@@ -279,7 +386,6 @@ function gatherCatPoints(userCatPoints, nCats=3) {
 
 
 function insertCatPoints(topCatPoints) {
-    console.log('this is topCatPoints:', topCatPoints)
     // take the topCatPoints and insert separate divs into challenges-div
     // for each cat
     let cats = Object.keys(topCatPoints), vals = Object.values(topCatPoints)
