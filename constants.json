@@ -10,6 +10,7 @@
     "sheet_id": "1Sk1PrhvWS9oj2FSHgQnlfu-zd74C_EknYfA2cIo9ANU",
     "sheet_name": "Form Responses 1",
     "parsed_links": "parsed_links.csv",
+    "bad_links": "bad_links.pickle",
     "img_fname_patt": "aos_hobby_league",
     "r2_dir": "r2_images"
 }

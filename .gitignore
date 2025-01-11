@@ -3,3 +3,5 @@ secrets.json
 *.csv
 dummy.html
 r2_images/*
+*.pickle
+__pycache__

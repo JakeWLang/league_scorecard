@@ -166,7 +166,7 @@ function handleResponse(fileText) {
       })
       .then(data => {
         let parsedImgs = parseCSV(data, ',')
-        let randPicks = getRandFromCol(parsedImgs, 'img_filename', 5)
+        let randPicks = getRandFromCol(parsedImgs, 'img_filename', 10)
         console.log(randPicks)
         setGalleryImg(randPicks, parsedImgs, sheetObjects)
       })
