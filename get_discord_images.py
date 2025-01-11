@@ -1,4 +1,3 @@
-'''I need to look into resizing images that are taller than a certain amount'''
 import time
 import pickle
 import re
@@ -6,6 +5,7 @@ import requests
 import json
 import pandas as pd
 from r2_upload import init_client, upload_new, upload_file
+from image_fix import resize_tall 
 
 OUTPUT_DIR = 'r2_images'
 
@@ -14,7 +14,7 @@ with open('secrets.json', 'r') as f:
 DISCORD_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REFRESH_TOKEN, *_ = tuple(e for e in secrets.values())
 with open('constants.json', 'r') as f:
     const = json.loads(f.read())
-COL_NAME_MAP, SHEET_ID, SHEET_NAME, PARSED_LINKS, BAD_LINKS, IMG_FNAME_PATT, R2_DIR = tuple(e for e in const.values())
+COL_NAME_MAP, SHEET_ID, SHEET_NAME, PARSED_LINKS, BAD_LINKS, IMG_FNAME_PATT, R2_DIR, *_ = tuple(e for e in const.values())
 
 def get_sheets_headers():
     url = "https://accounts.google.com/o/oauth2/token"
@@ -42,7 +42,7 @@ def get_parsed_bad_links():
     try:
         with open(BAD_LINKS, 'rb') as f:
             bad_links = pickle.load(f)
-    except EOFError:
+    except (EOFError, FileNotFoundError):
         print('No bad link pickle detected. Creating empty list')
         bad_links = []
     return bad_links
@@ -112,7 +112,7 @@ def retrieve_message(channel_id, message_id):
 
 def retrieve_attachment_links(_json):
     attachments = _json['attachments']
-    attachments = [att['url'] for att in attachments]
+    attachments = [att['url'] for att in attachments if not '.mp4' in att['url']]
     return attachments
 
 
@@ -142,7 +142,7 @@ def dump_bad_links(parsed_data, bad_links):
         print(f'Removing {n_new_bad} link(s) from the dataset and filtering for future iterations')
         bad_links += bad_parsed
         parsed_data = parsed_data[~(pd.isna(parsed_data.img_link))]
-        parsed_data.reset_index(drop=True, inplace=True)
+        parsed_data = parsed_data.reset_index(drop=True)
 
         with open(BAD_LINKS, 'wb') as bad_pickle:
             pickle.dump(bad_links, bad_pickle)
@@ -174,7 +174,6 @@ def gather_img(run, link, img_name):
         print(f'retrieved img: {img_name}')
 
 
-
 def main():
     r2_client = init_client()
     bad_links = get_parsed_bad_links()
@@ -191,13 +190,11 @@ def main():
         new_data = new_data[~(new_data.form_link.isin(bad_links))]
         if len(new_data) > 0:
             parsed_data = pd.concat([parsed_data, new_data])
-
             parsed_data = dump_bad_links(parsed_data, bad_links)
-
             parsed_data = gen_ids(parsed_data)
             parsed_data['img_filename'] = parsed_data.apply(gen_img_filename, axis=1)
-            parsed_data.to_csv('test.csv')
             parsed_data.apply(lambda x: gather_img(x.isnew, x.img_link, x.img_filename), axis=1)
+            parsed_data.img_filename.apply(lambda x: resize_tall(f'{R2_DIR}/{x}'))
             parsed_data.apply(lambda x: upload_new(r2_client, x.isnew, f'{R2_DIR}/{x.img_filename}', x.img_filename), axis=1)
             parsed_data['isnew'] = False
 
