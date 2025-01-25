@@ -14,7 +14,7 @@ with open('secrets.json', 'r') as f:
 DISCORD_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REFRESH_TOKEN, *_ = tuple(e for e in secrets.values())
 with open('constants.json', 'r') as f:
     const = json.loads(f.read())
-COL_NAME_MAP, SHEET_ID, SHEET_NAME, PARSED_LINKS, BAD_LINKS, IMG_FNAME_PATT, R2_DIR, *_ = tuple(e for e in const.values())
+COL_NAME_MAP, SHEET_IDS, SHEET_NAME, PARSED_LINKS, BAD_LINKS, IMG_FNAME_PATT, R2_DIR, *_ = tuple(e for e in const.values())
 
 def get_sheets_headers():
     url = "https://accounts.google.com/o/oauth2/token"
@@ -51,12 +51,16 @@ def get_parsed_bad_links():
 def get_sheets_data(_range='A:F'):
     '''_range is in A1 notation (i.e. A:I gives all rows for columns A to I)'''
     headers = get_sheets_headers()
-    sheet_link = f'https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}/values/{SHEET_NAME}!{_range}'
-    r = requests.get(sheet_link, headers=headers)
-    values = r.json()['values']
-    df = pd.DataFrame(values[1:])
-    df.columns = values[0]
-    df = df.apply(lambda x: x.str.strip())
+    assembled_data = []
+    for sheet_id in SHEET_IDS:
+        sheet_link = f'https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{SHEET_NAME}!{_range}'
+        r = requests.get(sheet_link, headers=headers)
+        values = r.json()['values']
+        df = pd.DataFrame(values[1:])
+        df.columns = values[0]
+        df = df.apply(lambda x: x.str.strip())
+        assembled_data.append(df)
+    assembled_data = pd.concat(assembled_data)
     return df
 
 
@@ -194,7 +198,7 @@ def main():
             parsed_data = gen_ids(parsed_data)
             parsed_data['img_filename'] = parsed_data.apply(gen_img_filename, axis=1)
             parsed_data.apply(lambda x: gather_img(x.isnew, x.img_link, x.img_filename), axis=1)
-            parsed_data.img_filename.apply(lambda x: resize_tall(f'{R2_DIR}/{x}'))
+            parsed_data.apply(lambda x: resize_tall(f'{R2_DIR}/{x.img_filename}', x.isnew), axis=1)
             parsed_data.apply(lambda x: upload_new(r2_client, x.isnew, f'{R2_DIR}/{x.img_filename}', x.img_filename), axis=1)
             parsed_data['isnew'] = False
 

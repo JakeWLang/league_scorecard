@@ -1,13 +1,19 @@
 {
     "colnames": {
         "Link to discord message that includes picture": "form_link",
+        "Please include a link to the discord message that includes a picture of your models.": "form_link",
         "Please mark every point you scored.": "point_cats",
+        "Please mark every point you scored. In the \"Other\" section, please include any bonus points you have earned.": "point_cats",
         "Timestamp": "time",
         "Total point worth": "total_points",
+        "How many points in total is your submission worth?": "total_points",
         "What is your username as it appears in the discord?": "username",
         "What unit(s) have you completed?": "units_completed"
     },
-    "sheet_id": "1Sk1PrhvWS9oj2FSHgQnlfu-zd74C_EknYfA2cIo9ANU",
+    "sheet_ids": [
+        "1Sk1PrhvWS9oj2FSHgQnlfu-zd74C_EknYfA2cIo9ANU",
+        "1V-6PG_FM5aaD7xQBieN0WoaKEB2YhVReE5u5lkQzzYk"
+    ],
     "sheet_name": "Form Responses 1",
     "parsed_links": "parsed_links.csv",
     "bad_links": "bad_links.pickle",
