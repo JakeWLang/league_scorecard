@@ -192,6 +192,7 @@ def main():
         new_data = new_data.explode('img_links')[['time', 'username', 'form_link', 'img_links', 'isnew']].reset_index(drop=True)
         new_data = new_data.rename({'img_links': 'img_link'}, axis=1)
         new_data = new_data[~(new_data.form_link.isin(bad_links))]
+
         if len(new_data) > 0:
             parsed_data = pd.concat([parsed_data, new_data])
             parsed_data = dump_bad_links(parsed_data, bad_links)
@@ -201,9 +202,10 @@ def main():
             parsed_data.apply(lambda x: resize_tall(f'{R2_DIR}/{x.img_filename}', x.isnew), axis=1)
             parsed_data.apply(lambda x: upload_new(r2_client, x.isnew, f'{R2_DIR}/{x.img_filename}', x.img_filename), axis=1)
             parsed_data['isnew'] = False
+            parsed_data.to_csv(PARSED_LINKS, index=False)
+            upload_file(r2_client, PARSED_LINKS, PARSED_LINKS, True)
 
-    parsed_data.to_csv(PARSED_LINKS, index=False)
-    upload_file(r2_client, PARSED_LINKS, PARSED_LINKS, True)
+
 
 
 if __name__ == '__main__':
