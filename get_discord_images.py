@@ -1,9 +1,12 @@
+from datetime import datetime
+from os import chdir, path
 import time
 import pickle
 import re
 import requests
 import json
 import pandas as pd
+chdir(path.dirname(path.abspath(__file__)))
 from r2_upload import init_client, upload_new, upload_file
 from image_fix import resize_tall 
 
@@ -15,6 +18,11 @@ DISCORD_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REFRESH_TOKEN, *_ = tuple
 with open('constants.json', 'r') as f:
     const = json.loads(f.read())
 COL_NAME_MAP, SHEET_IDS, SHEET_NAME, PARSED_LINKS, BAD_LINKS, IMG_FNAME_PATT, R2_DIR, *_ = tuple(e for e in const.values())
+
+_print = print
+def print(*args, **kw):
+    _print("[%s]" % (datetime.now()),*args, **kw)
+
 
 def get_sheets_headers():
     url = "https://accounts.google.com/o/oauth2/token"
