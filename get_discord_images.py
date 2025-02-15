@@ -187,6 +187,7 @@ def gather_img(run, link, img_name):
 
 
 def main():
+    print('Beginning run')
     r2_client = init_client()
     bad_links = get_parsed_bad_links()
     new_data = get_sheets_data()
@@ -212,6 +213,7 @@ def main():
             parsed_data['isnew'] = False
             parsed_data.to_csv(PARSED_LINKS, index=False)
             upload_file(r2_client, PARSED_LINKS, PARSED_LINKS, True)
+    print('Finished run')
 
 
 
